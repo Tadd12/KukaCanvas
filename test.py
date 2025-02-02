@@ -1,71 +1,125 @@
-# Redefining the correct smiley face path
+#!/usr/bin/env python3
+import sys
+import numpy as np
+from PIL import Image, ImageFilter
+import matplotlib.pyplot as plt
+from scipy.interpolate import make_interp_spline
+from skimage import measure
 
-# Circle face (approximate with discrete points)
-face_circle = [(100 + 90 * np.cos(theta), 100 + 90 * np.sin(theta), 0) for theta in np.linspace(0, 2 * np.pi, 100)]
+# ===========================
+# Configuration Variables
+# ===========================
+IMAGE_PATH = "stick.png"  # <-- Update this with the path to your image file
+THRESHOLD_VALUE = 64  # Threshold for binary conversion (adjust as needed)
 
-# Left eye
-left_eye = [(70 + 10 * np.cos(theta), 130 + 10 * np.sin(theta), 0) for theta in np.linspace(0, 2 * np.pi, 30)]
 
-# Right eye
-right_eye = [(130 + 10 * np.cos(theta), 130 + 10 * np.sin(theta), 0) for theta in np.linspace(0, 2 * np.pi, 30)]
+# ===========================
+# Edge Extraction Function
+# ===========================
+def extract_edges_as_point_arrays(image_path, threshold_value):
+    """
+    Loads an image using Pillow, applies an edge detection filter, thresholds the image,
+    and then extracts the edges as point arrays using scikit-image.
 
-# Smile curve (Bezier-like arc)
-smile = [(60 + t * 80, 70 + 30 * np.sin(t * np.pi), 0) for t in np.linspace(0, 1, 50)]
+    Parameters:
+      image_path (str): Path to the input image.
+      threshold_value (int): Threshold for converting the edge image to a binary image.
 
-# Combining all paths in proper drawing order
-smiley_path = face_circle + left_eye + right_eye + smile + [(60, 70, 50)]  # Lift pen at end
+    Returns:
+      list: A list of NumPy arrays, each representing a contour as an array of (x, y) points.
+    """
+    # Load the image
+    try:
+        image = Image.open(image_path).convert("RGBA")
+    except Exception as e:
+        sys.exit("Error opening image: " + str(e))
 
-# Extract coordinates for plotting
-x_coords = [p[0] for p in smiley_path]
-y_coords = [p[1] for p in smiley_path]
-z_coords = [p[2] for p in smiley_path]
+    # Create a new white background image of the same size
+    white_bg = Image.new("RGBA", image.size, (255, 255, 255, 255))
 
-# Set up figure for animation
-fig, ax = plt.subplots(figsize=(6, 6))
-ax.set_xlim(0, 200)
-ax.set_ylim(0, 200)
-ax.set_xticks([])
-ax.set_yticks([])
-ax.set_title("KUKA Robot Drawing Smiley Face")
+    # Composite the image over the white background
+    image_with_white_bg = Image.alpha_composite(white_bg, image)
 
-# Plot elements
-line, = ax.plot([], [], 'k-', lw=2)  # Path line
-robot_tip, = ax.plot([], [], 'ro', markersize=8)  # Robot tool marker
-pen_state = ax.text(10, 190, "Pen: Down", fontsize=12, color="green")
+    # Convert image to grayscale
+    gray_image = image_with_white_bg.convert("L")
 
-# Initialization function
-def init():
-    line.set_data([], [])
-    robot_tip.set_data([], [])
-    pen_state.set_text("Pen: Down")
-    return line, robot_tip, pen_state
+    # Apply an edge detection filter provided by Pillow
+    edge_image = gray_image.filter(ImageFilter.EDGE_ENHANCE).filter(ImageFilter.FIND_EDGES)
 
-# Update function for animation
-def update(frame):
-    x_data = x_coords[:frame]
-    y_data = y_coords[:frame]
-    line.set_data(x_data, y_data)
+    # Convert the edge image to a NumPy array
+    edge_array = np.array(edge_image)#[:, :, 3]
 
-    # Update robot tip position
-    robot_tip.set_data(x_coords[frame-1], y_coords[frame-1])
+    # Create a binary image using the threshold value
+    binary = edge_array > threshold_value
 
-    # Check if pen is lifted
-    if z_coords[frame-1] > 0:
-        pen_state.set_text("Pen: Up")
-        pen_state.set_color("red")
-    else:
-        pen_state.set_text("Pen: Down")
-        pen_state.set_color("green")
+    # Extract contours using scikit-image's find_contours
+    # find_contours returns a list of arrays with (row, col) coordinates.
+    raw_contours = measure.find_contours(binary.astype(float), level=0.1, fully_connected="high")
 
-    return line, robot_tip, pen_state
+    # Convert each contour from (row, col) to (x, y) coordinates
+    point_arrays = []
+    for contour in raw_contours:
+        # Flip columns and rows so that we have (x, y)
+        points = np.fliplr(contour)
+        point_arrays.append(points)
 
-# Create animation
-ani = animation.FuncAnimation(fig, update, frames=len(smiley_path), init_func=init, blit=True, interval=50)
+    return point_arrays
 
-# Save the animation as a video file
-video_filename = "/mnt/data/kuka_smiley_drawing.mp4"
-ani.save(video_filename, writer="ffmpeg", fps=20)
 
-# Display the video file
-video_filename
+# ===========================
+# Plotting Function
+# ===========================
+def plot_contours(contours):
+    """
+    Plots a list of contours (each contour is an array of (x,y) points) using Matplotlib.
+    """
+    plt.figure(figsize=(8, 8))
+    for idx, contour in enumerate(contours):
+        # Extract x and y coordinates from the contour array
+        x_coords = contour[:, 0]
+        y_coords = contour[:, 1]
+        # Plot the contour as a line
+        plt.plot(x_coords, y_coords, label=f"Contour {idx + 1}")
+    plt.xlabel("X (pixels)")
+    plt.ylabel("Y (pixels)")
+    plt.title("Extracted Edge Contours")
+    plt.legend()
+    plt.gca().invert_yaxis()  # Invert Y-axis so that the origin is at the top-left
+    plt.grid(True)
+    plt.show()
 
+
+def chaikins_corner_cutting(coords, refinements=5):
+    coords = np.array(coords)
+
+    for _ in range(refinements):
+        L = coords.repeat(2, axis=0)
+        R = np.empty_like(L)
+        R[0] = L[0]
+        R[2::2] = L[1:-1:2]
+        R[1:-1:2] = L[2::2]
+        R[-1] = L[-1]
+        coords = L * 0.75 + R * 0.25
+
+    return coords
+
+# ===========================
+# Main Script Execution
+# ===========================
+def main():
+    contours = extract_edges_as_point_arrays(IMAGE_PATH, THRESHOLD_VALUE)[1:]
+
+    # Print the extracted edge point arrays
+    for idx, contour in enumerate(contours):
+        print(f"Contour {idx}:")
+        print(contour)
+        print("-" * 40)
+
+    new_count = [chaikins_corner_cutting(contour) for contour in contours]
+
+    # Plot the extracted contours
+    plot_contours(new_count)
+
+
+if __name__ == "__main__":
+    main()
