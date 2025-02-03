@@ -21,13 +21,13 @@ HOME_Y = 0.0  # Home Y coordinate
 
 # Spline smoothing parameters
 SMOOTHING_FACTOR = 0.5  # Increase to smooth more (0 forces interpolation through all points)
-NUM_POINTS = 200  # Number of points in the smoothed contour
+POINT_DISTANCE = 2  # Point Distance in mm
 
 
 # ===========================================================
 # Spline Interpolation Function
 # ===========================================================
-def smooth_contour(contour, smoothing=SMOOTHING_FACTOR, num_points=NUM_POINTS):
+def smooth_contour(contour, smoothing=SMOOTHING_FACTOR, distance=POINT_DISTANCE):
     """
     Smooth a 2D contour using parametric spline interpolation.
 
@@ -35,7 +35,6 @@ def smooth_contour(contour, smoothing=SMOOTHING_FACTOR, num_points=NUM_POINTS):
       contour (np.array): An (N, 2) array of (x, y) points.
       smoothing (float): Smoothing factor for splprep. Use 0 to force interpolation
                          through every point.
-      num_points (int): Number of points to sample in the smoothed contour.
 
     Returns:
       np.array: An (num_points, 2) array of smoothed (x, y) points.
@@ -55,6 +54,8 @@ def smooth_contour(contour, smoothing=SMOOTHING_FACTOR, num_points=NUM_POINTS):
     tck, _ = splprep([x, y], s=smoothing, u=t)
 
     # Generate new, uniformly spaced parameter values.
+    mean = np.mean(np.sqrt(np.square(contour[:-1, 0] - contour[1:, 0]) + np.square(contour[:-1, 1] - contour[1:, 1])))
+    num_points = int((len(contour) * mean) / distance)
     u_fine = np.linspace(0, 1, num_points)
 
     # Evaluate the spline to obtain smoothed coordinates.
@@ -101,6 +102,7 @@ def generate_krl_script(contours, filename="draw.krl"):
 
         # Smooth (interpolate) the contour
         smooth_pts = smooth_contour(contour)
+        print(f"Writing Contour {i+1} with {len(smooth_pts)} points")
 
         krl_lines.append(f"; ----- Contour {i + 1} -----")
         # Move with pencil up (PTP) to starting point.

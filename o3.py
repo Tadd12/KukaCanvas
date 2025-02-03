@@ -126,7 +126,7 @@ def extract_edges_as_point_arrays(image_path, threshold_value):
         points_smoothed = smooth_contour(points, window_size=SMOOTHING_WINDOW)
 
         point_arrays.append(points_smoothed)
-
+    point_arrays = [p for i, p in enumerate(point_arrays) if i % 2 == 0]
     return point_arrays
 
 
