@@ -1,16 +1,14 @@
-from typing import Any
-
 import numpy as np
 from matplotlib import pyplot as plt
 
 
-def str_to_point(input: str) -> list:
-    point = input[:-1].split("{")[1].split("}")[0]
-    point = [float(p.split(":")[1]) for p in point.split(",")]
+def str_to_point(line: str) -> list:
+    point = line[:-1].split("{")[1].split("}")[0]
+    point = [float(p.split(" ")[1]) for p in point.split(", ")]
     return point
 
 
-def extract(filename: str) -> np.ndarray:
+def extract(filename: str) -> list[np.ndarray]:
     points = []
 
     with open(filename, 'r') as f:

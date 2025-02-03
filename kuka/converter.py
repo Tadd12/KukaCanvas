@@ -14,7 +14,7 @@ from scipy.interpolate import splprep, splev
 # Configuration Parameters (adjust as needed)
 # ===========================================================
 # Pencil and robot motion parameters (in mm)
-TRAVEL_Z = 100.0  # Z height when pencil is up (travel mode)
+TRAVEL_Z = 10.0  # Z height when pencil is up (travel mode)
 DRAW_Z = 0.0  # Z height when pencil is down (drawing mode)
 HOME_X = 0.0  # Home X coordinate
 HOME_Y = 0.0  # Home Y coordinate
@@ -23,9 +23,14 @@ HOME_Y = 0.0  # Home Y coordinate
 LENGTH_X = 210.0  # Length of the paper (e.g., A4 width)
 HEIGHT_Y = 297.0  # Height of the paper (e.g., A4 height)
 
+SCALING_METHOD = "keep_ratio" # "keep_ratio", "scale_to_paper"
+
+BORDER_WIDTH_X = 5.0
+BORDER_WIDTH_Y = 5.0
+
 # Spline smoothing parameters
 SMOOTHING_FACTOR = 0.5  # Increase to smooth more (0 forces interpolation through all points)
-POINT_DISTANCE = 2  # Point Distance in mm
+POINT_DISTANCE = 5  # Point Distance in mm
 
 
 # ===========================================================
@@ -93,15 +98,41 @@ def generate_krl_script(contours, filename="draw.krl"):
     krl_lines.append("&REL 1")
     krl_lines.append("DEF DRAW_PICTURE()")
     krl_lines.append("; Define home position (pencil up)")
+    krl_lines.append("POS p_home")
     krl_lines.append(
-        f"DECL E6POS p_home = {{X: {HOME_X:.2f}, Y: {HOME_Y:.2f}, Z: {TRAVEL_Z:.2f}, A:0, B:0, C:0}}"
+        f"p_home = {{X {HOME_X:.2f}, Y {HOME_Y:.2f}, Z {TRAVEL_Z:.2f}, A 0, B 0, C 0}}"
     )
+    krl_lines.append("")
+    krl_lines.append("")
+    krl_lines.append("BAS(#initmov, 0)")
+    krl_lines.append("BAS(#tool, 1)")
+    krl_lines.append("")
+    krl_lines.append("PTP $axis_act")
     krl_lines.append("PTP p_home")
     krl_lines.append("")
 
     # Determine the maximum dimensions across all contours
-    max_x = max(np.max(contour[:, 0]) for contour in contours)
-    max_y = max(np.max(contour[:, 1]) for contour in contours)
+    max_x = np.max([np.max(cont[:, 0]) for cont in contours])
+    max_y = np.max([np.max(cont[:, 1]) for cont in contours])
+
+    min_x = np.min([np.min(cont[:, 0]) for cont in contours])
+    min_y = np.min([np.min(cont[:, 1]) for cont in contours])
+
+    height_without_border = HEIGHT_Y - 2*BORDER_WIDTH_Y
+    width_without_border = LENGTH_X - 2*BORDER_WIDTH_X
+
+    # scale Points
+    match SCALING_METHOD:
+        case "keep_ratio":
+            for cont in contours:
+                cont[:] -= [min_x, min_y]
+
+
+        case "scale_to_paper":
+            pass
+        case _:
+            print("WARNING: Unknown SCALING_METHOD {}".format(SCALING_METHOD))
+
 
     # Process each contour
     for i, contour in enumerate(contours):
@@ -113,6 +144,7 @@ def generate_krl_script(contours, filename="draw.krl"):
         print(f"Writing Contour {i+1} with {len(smooth_pts)} points")
 
         krl_lines.append(f"; ----- Contour {i + 1} -----")
+
         # Scale points to fit on the paper
         smooth_pts[:, 0] = smooth_pts[:, 0] * LENGTH_X / max_x
         smooth_pts[:, 1] = smooth_pts[:, 1] * HEIGHT_Y / max_y
@@ -120,25 +152,23 @@ def generate_krl_script(contours, filename="draw.krl"):
         # Move with pencil up (PTP) to starting point.
         start_x, start_y = smooth_pts[0]
         krl_lines.append(
-            f"PTP {{X: {start_x:.2f}, Y: {start_y:.2f}, Z: {TRAVEL_Z:.2f}, A:0, B:0, C:0}}"
+            f"PTP {{X {start_x:.2f}, Y {start_y:.2f}, Z {TRAVEL_Z:.2f}, A 0, B 0, C 0}}"
         )
         # Lower the pencil using a LIN move.
         krl_lines.append(
-            f"LIN {{X: {start_x:.2f}, Y: {start_y:.2f}, Z: {DRAW_Z:.2f}, A:0, B:0, C:0}}"
+            f"LIN {{X {start_x:.2f}, Y {start_y:.2f}, Z {DRAW_Z:.2f}, A 0, B 0, C 0}}"
         )
-        krl_lines.append("$OUT[1] = TRUE  ; Pencil down")
         # Draw the contour with LIN moves.
         for pt in smooth_pts[1:]:
             x, y = pt
             krl_lines.append(
-                f"LIN {{X: {x:.2f}, Y: {y:.2f}, Z: {DRAW_Z:.2f}, A:0, B:0, C:0}} C_DIS"
+                f"LIN {{X {x:.2f}, Y {y:.2f}, Z {DRAW_Z:.2f}, A 0, B 0, C 0}} C_DIS"
             )
         # End the contour by lifting the pencil.
         last_x, last_y = smooth_pts[-1]
         krl_lines.append(
-            f"LIN {{X: {last_x:.2f}, Y: {last_y:.2f}, Z: {TRAVEL_Z:.2f}, A:0, B:0, C:0}}"
+            f"LIN {{X {last_x:.2f}, Y {last_y:.2f}, Z {TRAVEL_Z:.2f}, A 0, B 0, C 0}}"
         )
-        krl_lines.append("$OUT[1] = FALSE  ; Pencil up")
         krl_lines.append("")
 
     # Return to home position at the end.

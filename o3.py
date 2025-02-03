@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import sys
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageOps
 import matplotlib.pyplot as plt
-from scipy.interpolate import splprep, splev
 from skimage import measure, morphology
 
 import kuka.converter
@@ -12,7 +11,7 @@ import kuka.converter
 # Configuration Variables
 # ===========================
 IMAGE_PATH = "stick.png"  # <-- Update with the path to your image file
-THRESHOLD_VALUE = 64  # Threshold for binary conversion (adjust as needed)
+THRESHOLD_VALUE = 32  # Threshold for binary conversion (adjust as needed)
 BORDER_MARGIN = 5  # Margin (in pixels) around the image to discard contours touching the border
 SMOOTHING_WINDOW = 5  # Window size for smoothing the contour lines
 MIN_CONTOUR_LENGTH = 50  # Minimum number of points for a contour to be considered
@@ -72,6 +71,8 @@ def extract_edges_as_point_arrays(image_path, threshold_value):
     except Exception as e:
         sys.exit("Error opening image: " + str(e))
 
+    image = ImageOps.expand(image, border=20)
+
     # Composite onto a white background (so transparent regions become white)
     white_bg = Image.new("RGBA", image.size, (255, 255, 255, 255))
     image = Image.alpha_composite(white_bg, image)
@@ -96,14 +97,14 @@ def extract_edges_as_point_arrays(image_path, threshold_value):
     binary_clean = morphology.closing(binary, morphology.disk(3))
 
     # Remove small objects (noise) that are unlikely to be part of a significant edge.
-    binary_clean = morphology.remove_small_objects(binary_clean, min_size=50)
+    binary_clean = morphology.remove_small_objects(binary_clean, min_size=10)
 
     # Optionally, fill small holes (if needed)
-    binary_clean = morphology.remove_small_holes(binary_clean, area_threshold=80)
+    binary_clean = morphology.remove_small_holes(binary_clean, area_threshold=20)
 
     # --- Contour Extraction ---
     # Adjust the level (e.g., 0.8) to extract the most relevant contours.
-    raw_contours = measure.find_contours(binary_clean.astype(float), level=0.6)
+    raw_contours = measure.find_contours(binary_clean.astype(float), level=0.999)
 
     point_arrays = []
     for contour in raw_contours:
@@ -122,11 +123,15 @@ def extract_edges_as_point_arrays(image_path, threshold_value):
         if len(points) < MIN_CONTOUR_LENGTH:
             continue
 
+        # Remove inner contours (clockwise)
+        if np.sum((points[1:, 0] - points[:-1, 0]) * (points[1:, 1] + points[:-1, 1])) <= 0:
+            continue
+
         # Smooth the contour line.
         points_smoothed = smooth_contour(points, window_size=SMOOTHING_WINDOW)
 
         point_arrays.append(points_smoothed)
-    point_arrays = [p for i, p in enumerate(point_arrays) if i % 2 == 0]
+
     return point_arrays
 
 
@@ -143,7 +148,6 @@ def plot_contours(contours):
     plt.xlabel("X (pixels)")
     plt.ylabel("Y (pixels)")
     plt.title("Filtered & Smoothed Contours")
-    plt.legend()
     plt.gca().invert_yaxis()  # Invert Y-axis so that the origin is at the top-left
     plt.grid(True)
     plt.show()
