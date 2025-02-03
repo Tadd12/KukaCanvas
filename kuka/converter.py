@@ -121,6 +121,11 @@ def generate_krl_script(contours, filename="draw.krl"):
     height_without_border = HEIGHT_Y - 2*BORDER_WIDTH_Y
     width_without_border = LENGTH_X - 2*BORDER_WIDTH_X
 
+    # Calculate the scaling factor to maintain aspect ratio
+    scale_x = (LENGTH_X - 2 * BORDER_WIDTH_X) / (max_x - min_x)
+    scale_y = (HEIGHT_Y - 2 * BORDER_WIDTH_Y) / (max_y - min_y)
+    scale = min(scale_x, scale_y)
+
     # scale Points
     match SCALING_METHOD:
         case "keep_ratio":
@@ -146,8 +151,8 @@ def generate_krl_script(contours, filename="draw.krl"):
         krl_lines.append(f"; ----- Contour {i + 1} -----")
 
         # Scale points to fit on the paper
-        smooth_pts[:, 0] = smooth_pts[:, 0] * LENGTH_X / max_x
-        smooth_pts[:, 1] = smooth_pts[:, 1] * HEIGHT_Y / max_y
+        smooth_pts[:, 0] = smooth_pts[:, 0] * scale + BORDER_WIDTH_X
+        smooth_pts[:, 1] = smooth_pts[:, 1] * scale + BORDER_WIDTH_Y
 
         # Move with pencil up (PTP) to starting point.
         start_x, start_y = smooth_pts[0]
