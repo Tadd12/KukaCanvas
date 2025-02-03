@@ -45,15 +45,16 @@ def plot_path(filename: str) -> None:
     last_point: np.ndarray = None
     for contour in points:
         if last_point is not None:
-            plt.plot([last_point[0], contour[0, 0]], [last_point[1], contour[0, 1]], "--")
+            plt.plot([last_point[0], contour[0, 0]], [last_point[1], contour[0, 1]], "--", label="Move")
         plt.plot(contour[0, 0], contour[0, 1], "o", color="green")
         plt.plot(contour[1:, 0], contour[1:, 1], "o-")
         plt.plot(contour[-1, 0], contour[-1, 1], "o", color="red")
         last_point = contour[-1]
 
-    plt.xlabel("X (pixels)")
-    plt.ylabel("Y (pixels)")
+    plt.xlabel("X (mm)")
+    plt.ylabel("Y (mm)")
     plt.title("Robot Path")
+    plt.legend()
     plt.gca().invert_yaxis()  # Invert Y-axis so that the origin is at the top-left
     plt.grid(True)
     plt.show()
