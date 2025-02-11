@@ -1,5 +1,4 @@
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -159,7 +158,7 @@ def plot_extracted_path(points):
 
 # Example usage:
 if __name__ == "__main__":
-    png_file = "img.png"  # Replace with your PNG file path
+    png_file = "shibu.png"  # Replace with your PNG file path
 
     try:
         # Step 1: Extract points from the PNG file

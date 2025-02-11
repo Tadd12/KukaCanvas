@@ -10,7 +10,7 @@ import kuka.converter
 # ===========================
 # Configuration Variables
 # ===========================
-IMAGE_PATH = "stick.png"  # <-- Update with the path to your image file
+IMAGE_PATH = "shibu.png"  # <-- Update with the path to your image file
 THRESHOLD_VALUE = 32  # Threshold for binary conversion (adjust as needed)
 BORDER_MARGIN = 5  # Margin (in pixels) around the image to discard contours touching the border
 SMOOTHING_WINDOW = 5  # Window size for smoothing the contour lines
