@@ -10,13 +10,28 @@
     <div class="container">
         <h1 class="my-4 text-center">KukaCanvas</h1>
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <form action="/upload" method="post" enctype="multipart/form-data" class="mb-4">
                     <div class="form-group">
                         <label for="file">Upload PNG file:</label>
                         <input type="file" class="form-control-file" id="file" name="file" accept=".png">
                     </div>
                     <button type="submit" class="btn btn-primary">Upload</button>
+                </form>
+                <form action="/update_preprocessing" method="post" class="mb-4">
+                    <div class="form-group">
+                        <label for="blur_intensity">Blur Intensity:</label>
+                        <input type="number" class="form-control" id="blur_intensity" name="blur_intensity" value="{{ preprocessing_options.blur_intensity }}" min="1" max="15">
+                    </div>
+                    <div class="form-group">
+                        <label for="threshold_block_size">Threshold Block Size:</label>
+                        <input type="number" class="form-control" id="threshold_block_size" name="threshold_block_size" value="{{ preprocessing_options.threshold_block_size }}" min="3" max="15">
+                    </div>
+                    <div class="form-group">
+                        <label for="threshold_C">Threshold C:</label>
+                        <input type="number" class="form-control" id="threshold_C" name="threshold_C" value="{{ preprocessing_options.threshold_C }}" min="1" max="10">
+                    </div>
+                    <button type="submit" class="btn btn-secondary">Update Preprocessing</button>
                 </form>
                 <form action="/remove_contour" method="post" class="mb-4">
                     <div class="form-group">
@@ -26,12 +41,20 @@
                     <button type="submit" class="btn btn-danger">Remove Contour</button>
                 </form>
             </div>
-            <div class="col-md-8">
+            <div class="col-md-6">
                 <iframe name="plot_frame" src="/plot" width="100%" height="500px" class="border"></iframe>
+                <div class="d-flex justify-content-between mt-4">
+                    <form action="/undo" method="post">
+                        <button type="submit" class="btn btn-info">Undo</button>
+                    </form>
+                    <form action="/redo" method="post">
+                        <button type="submit" class="btn btn-info">Redo</button>
+                    </form>
+                </div>
             </div>
         </div>
         <div class="row mt-4">
-            <div class="col-12">
+            <div class="col-12 text-center">
                 <form action="/convert" method="post" class="mb-4">
                     <button type="submit" class="btn btn-success">Convert to KRL</button>
                 </form>
