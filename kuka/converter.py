@@ -20,8 +20,8 @@ HOME_X = 0.0  # Home X coordinate
 HOME_Y = 0.0  # Home Y coordinate
 
 # Paper dimensions (in mm)
-LENGTH_X = 210.0 /2  # Length of the paper (e.g., A4 width)
-HEIGHT_Y = 297.0 /2 # Height of the paper (e.g., A4 height)
+LENGTH_X = 210.0  # Length of the paper (e.g., A4 width)
+HEIGHT_Y = 297.0  # Height of the paper (e.g., A4 height)
 
 SCALING_METHOD = "keep_ratio" # "keep_ratio", "scale_to_paper"
 
@@ -30,7 +30,7 @@ BORDER_WIDTH_Y = 5.0
 
 # Spline smoothing parameters
 SMOOTHING_FACTOR = 0.5  # Increase to smooth more (0 forces interpolation through all points)
-POINT_DISTANCE = 2  # Point Distance in mm
+POINT_DISTANCE = 5  # Point Distance in mm
 
 
 # ===========================================================
@@ -76,7 +76,7 @@ def smooth_contour(contour, smoothing=SMOOTHING_FACTOR, distance=POINT_DISTANCE)
 # ===========================================================
 # KRL Generation Function
 # ===========================================================
-def generate_krl_script(contours, filename="draw.src"):
+def generate_krl_script(contours, save=True, filename="draw.krl"):
     """
     Generates a KUKA KRL source file that instructs a 6-axis robot to draw
     the lines defined by the given (smoothed) contours.
@@ -90,6 +90,7 @@ def generate_krl_script(contours, filename="draw.src"):
     Parameters:
       contours (list of np.array): Each element is an (N,2) array containing
                                    points [X, Y] in the robot coordinate system.
+      save (bool): Whether to save the KRL source code to a file.
       filename (str): Name of the output KRL source file.
     """
     krl_lines = []
@@ -185,11 +186,15 @@ def generate_krl_script(contours, filename="draw.src"):
     krl_lines.append("PTP p_home")
     krl_lines.append("END")
 
-    # Write the KRL source code to the output file.
-    with open(f"kuka files/{filename}", "w") as f:
-        for line in krl_lines:
-            f.write(line + "\n")
-    print(f"KRL script saved to '{filename}'")
+
+    if save:
+        # Write the KRL source code to the output file.
+        with open(filename, "w") as f:
+            for line in krl_lines:
+                f.write(line + "\n")
+        print(f"KRL script saved to '{filename}'")
+
+    return krl_lines
 
 # ===========================================================
 # Main Script Execution

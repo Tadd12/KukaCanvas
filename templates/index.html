@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KukaCanvas</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1 class="my-4 text-center">KukaCanvas</h1>
+        <div class="row">
+            <div class="col-md-4">
+                <form action="/upload" method="post" enctype="multipart/form-data" class="mb-4">
+                    <div class="form-group">
+                        <label for="file">Upload PNG file:</label>
+                        <input type="file" class="form-control-file" id="file" name="file" accept=".png">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </form>
+                <form action="/remove_contour" method="post" class="mb-4">
+                    <div class="form-group">
+                        <label for="contour_index">Number of Contour to Remove:</label>
+                        <input type="number" class="form-control" id="contour_index" name="contour_index" min="0">
+                    </div>
+                    <button type="submit" class="btn btn-danger">Remove Contour</button>
+                </form>
+            </div>
+            <div class="col-md-8">
+                <iframe name="plot_frame" src="/plot" width="100%" height="500px" class="border"></iframe>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-12">
+                <form action="/convert" method="post" class="mb-4">
+                    <button type="submit" class="btn btn-success">Convert to KRL</button>
+                </form>
+                <h2>KRL Script:</h2>
+                <textarea id="krl_text_area" class="form-control mb-2" rows="10" onchange="updateKRL()">{{ krl_script }}</textarea>
+                <button class="btn btn-secondary" onclick="copyToClipboard()">Copy to Clipboard</button>
+                <a href="/download_krl" class="btn btn-info" download="draw.src">Download KRL Script</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        function copyToClipboard() {
+            var copyText = document.getElementById("krl_text_area");
+            copyText.select();
+            document.execCommand("copy");
+        }
+        function updateKRL() {
+            const krlScript = document.getElementById('krl_text_area').value;
+            fetch('/update_krl', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'krl_script': krlScript
+                })
+            });
+        }
+    </script>
+</body>
+</html>
