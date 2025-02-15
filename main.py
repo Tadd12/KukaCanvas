@@ -6,8 +6,9 @@ import numpy as np
 from PIL import Image, ImageOps
 from skimage import measure
 
+import kuka.converter
 
-image_path = "img.png"
+image_path = "shibu.png"
 
 def smooth_contour(contour, window_size=5):
     """
@@ -102,3 +103,5 @@ for idx, contour in enumerate(point_arrays):
 plt.xlabel("X (pixels)")
 plt.ylabel("Y (pixels)")
 plt.show()
+
+kuka.converter.generate_krl_script(point_arrays, "draw.src")

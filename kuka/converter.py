@@ -20,8 +20,8 @@ HOME_X = 0.0  # Home X coordinate
 HOME_Y = 0.0  # Home Y coordinate
 
 # Paper dimensions (in mm)
-LENGTH_X = 210.0  # Length of the paper (e.g., A4 width)
-HEIGHT_Y = 297.0  # Height of the paper (e.g., A4 height)
+LENGTH_X = 210.0 /2  # Length of the paper (e.g., A4 width)
+HEIGHT_Y = 297.0 /2 # Height of the paper (e.g., A4 height)
 
 SCALING_METHOD = "keep_ratio" # "keep_ratio", "scale_to_paper"
 
@@ -30,7 +30,7 @@ BORDER_WIDTH_Y = 5.0
 
 # Spline smoothing parameters
 SMOOTHING_FACTOR = 0.5  # Increase to smooth more (0 forces interpolation through all points)
-POINT_DISTANCE = 5  # Point Distance in mm
+POINT_DISTANCE = 2  # Point Distance in mm
 
 
 # ===========================================================
@@ -76,7 +76,7 @@ def smooth_contour(contour, smoothing=SMOOTHING_FACTOR, distance=POINT_DISTANCE)
 # ===========================================================
 # KRL Generation Function
 # ===========================================================
-def generate_krl_script(contours, filename="draw.krl"):
+def generate_krl_script(contours, filename="draw.src"):
     """
     Generates a KUKA KRL source file that instructs a 6-axis robot to draw
     the lines defined by the given (smoothed) contours.
@@ -105,7 +105,8 @@ def generate_krl_script(contours, filename="draw.krl"):
     krl_lines.append("")
     krl_lines.append("")
     krl_lines.append("BAS(#initmov, 0)")
-    krl_lines.append("BAS(#tool, 1)")
+    krl_lines.append("BAS(#tool, 3)")
+    krl_lines.append("BAS(#base, 3)")
     krl_lines.append("")
     krl_lines.append("PTP $axis_act")
     krl_lines.append("PTP p_home")
@@ -130,7 +131,8 @@ def generate_krl_script(contours, filename="draw.krl"):
     match SCALING_METHOD:
         case "keep_ratio":
             for cont in contours:
-                cont[:] -= [min_x, min_y]
+                #cont[:] -= [min_x, min_y]
+                pass
 
 
         case "scale_to_paper":
@@ -163,6 +165,9 @@ def generate_krl_script(contours, filename="draw.krl"):
         krl_lines.append(
             f"LIN {{X {start_x:.2f}, Y {start_y:.2f}, Z {DRAW_Z:.2f}, A 0, B 0, C 0}}"
         )
+        krl_lines.append(
+            "WAIT SEC 0.1"
+        )
         # Draw the contour with LIN moves.
         for pt in smooth_pts[1:]:
             x, y = pt
@@ -181,7 +186,7 @@ def generate_krl_script(contours, filename="draw.krl"):
     krl_lines.append("END")
 
     # Write the KRL source code to the output file.
-    with open(filename, "w") as f:
+    with open(f"kuka files/{filename}", "w") as f:
         for line in krl_lines:
             f.write(line + "\n")
     print(f"KRL script saved to '{filename}'")
