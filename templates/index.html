@@ -47,14 +47,14 @@
             </div>
         </div>
         <div class="row mt-4">
-            <div class="col-12 text-center">
+            <div class="col-12 text-center mb-5">
                 <form id="convert-form" action="/convert" method="post">
                     <button id="convert-button" type="submit" class="btn btn-success">Convert to KRL</button>
                 </form>
                 <h2>KRL Script:</h2>
                 <textarea id="krl_text_area" class="form-control mb-2" rows="10" onchange="updateKRL()">{{ krl_script }}</textarea>
-                <button class="btn btn-secondary" onclick="copyToClipboard()">Copy to Clipboard</button>
-                <a href="/download_krl" class="btn btn-info" download="draw.src">Download KRL Script</a>
+                <button class="btn btn-secondary mb-2" onclick="copyToClipboard()">Copy to Clipboard</button>
+                <a href="/download_krl" class="btn btn-info mb-2" download="draw.src">Download KRL Script</a>
             </div>
         </div>
     </div>
