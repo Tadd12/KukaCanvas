@@ -123,22 +123,8 @@ def plot():
 
         session['fig'] = fig.to_json()
 
-    plot_html = pio.to_html(fig, full_html=False)
+    plot_html = pio.to_html(fig, full_html=False, div_id="myDiv")
     return plot_html
-
-
-@app.route('/remove_contour', methods=['POST'])
-def remove_contour():
-    idx = int(request.form.get('contour_index')) - 1
-    contours = session.get('contours', [])
-    if 0 <= idx < len(contours):
-        contours.pop(idx)
-        session['contours'] = contours
-        if 'history' not in session:
-            session['history'] = []
-        session['history'].append((contours.copy(), session['preprocessing_options'].copy()))
-        session['redo_stack'] = []
-    return redirect(url_for('index'))
 
 @app.route('/update_fig', methods=['POST'])
 def update_fig():

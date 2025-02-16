@@ -33,13 +33,6 @@
                     </div>
                     <button type="submit" class="btn btn-secondary">Update Preprocessing</button>
                 </form>
-                <form action="/remove_contour" method="post" class="mb-4">
-                    <div class="form-group">
-                        <label for="contour_index">Number of Contour to Remove:</label>
-                        <input type="number" class="form-control" id="contour_index" name="contour_index" min="0">
-                    </div>
-                    <button type="submit" class="btn btn-danger">Remove Contour</button>
-                </form>
             </div>
             <div class="col-md-6">
                 <iframe name="plot_frame" id="plot-iframe" src="/plot" width="100%" height="500px" class="border"></iframe>
@@ -84,61 +77,53 @@
             });
         }
         function extractFigureFromIframe(iframeId) {
-            var iframe = document.getElementById(iframeId);
-            if (iframe) {
-                var iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
-                var plotlyGraphDiv = iframeDocument.querySelector('.plotly-graph-div');
-                if (plotlyGraphDiv) {
-                    var fig = plotlyGraphDiv.data;
-                    return fig;
-                } else {
-                    console.error('Plotly graph div not found in iframe.');
-                    return null;
-                }
+        var iframe = document.getElementById(iframeId);
+        if (iframe) {
+            var iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+            var plotlyGraphDiv = iframeDocument.querySelector('.plotly-graph-div');
+            if (plotlyGraphDiv) {
+                var fig = plotlyGraphDiv.data;
+                return fig;
             } else {
-                console.error('Iframe not found.');
+                console.error('Plotly graph div not found in iframe.');
                 return null;
             }
+        } else {
+            console.error('Iframe not found.');
+            return null;
         }
-        function updateFigOnClick() {
+    }
+
+    function updateFig(fig) {
+        fetch('/update_fig', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ fig: JSON.stringify(fig) })
+        }).then(response => {
+            if (!response.ok) {
+                console.error('Failed to update fig.');
+            }
+        });
+    }
+
+    document.getElementById('plot-iframe').addEventListener('load', function() {
+        var iframe = document.getElementById('plot-iframe');
+        var iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+        var plotlyGraphDiv = iframeDocument.querySelector('.plotly-graph-div');
+
+        plotlyGraphDiv.on('plotly_restyle', function() {
             var fig = extractFigureFromIframe('plot-iframe');
+            console.log("Hello");
             if (fig) {
-                fetch('/update_fig', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ fig: JSON.stringify(fig) })
-                }).then(response => {
-                    if (!response.ok) {
-                        console.error('Failed to update fig.');
-                    }
-                });
+                updateFig(fig);
             } else {
                 console.error('Failed to extract figure from iframe.');
             }
-        }
-        document.getElementById('plot-iframe').addEventListener('load', function() {
-            var iframe = document.getElementById('plot-iframe');
-            var iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
-            var plotlyGraphDiv = iframeDocument.querySelector('.plotly-graph-div');
-            plotlyGraphDiv.addEventListener('click', function() {
-            updateFigOnClick();
-            Plotly.toImage(plotlyGraphDiv).then(function(dataUrl) {
-                fetch('/update_fig', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ fig: JSON.stringify(plotlyGraphDiv.data) })
-                }).then(response => {
-                    if (!response.ok) {
-                        console.error('Failed to update fig.');
-                    }
-                });
-            });
-            });
         });
+    });
+
     </script>
 </body>
 </html>
