@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>KukaCanvas</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome (for chain icons) -->
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.3/css/all.css">
+</head>
+<body>
+  <div class="container">
+    <h1 class="my-4 text-center">KukaCanvas</h1>
+    <div class="row">
+      <div class="col-md-6">
+        <!-- 1) File Upload Form -->
+        <form action="{{ url_for('kuka_app.upload') }}" method="post" enctype="multipart/form-data" class="mb-4">
+          <div class="form-group">
+            <label for="file">Upload PNG file:</label>
+            <input type="file" class="form-control-file" id="file" name="file" accept=".png">
+          </div>
+          <button type="submit" class="btn btn-primary">Upload</button>
+        </form>
+
+        <!-- 2) Update Preprocessing Form -->
+        <form action="{{ url_for('kuka_app.update_preprocessing') }}" method="post" class="mb-4">
+          <div class="form-group">
+            <label for="blur_intensity">Blur Intensity:</label>
+            <input type="number" class="form-control" id="blur_intensity" name="blur_intensity"
+                   value="{{ preprocessing_options.blur_intensity }}" min="1" max="15">
+          </div>
+          <div class="form-group">
+            <label for="threshold_block_size">Threshold Block Size:</label>
+            <input type="number" class="form-control" id="threshold_block_size" name="threshold_block_size"
+                   value="{{ preprocessing_options.threshold_block_size }}" min="3" max="15">
+          </div>
+          <div class="form-group">
+            <label for="threshold_C">Threshold C:</label>
+            <input type="number" class="form-control" id="threshold_C" name="threshold_C"
+                   value="{{ preprocessing_options.threshold_C }}" min="1" max="10">
+          </div>
+          <button type="submit" class="btn btn-secondary">Update Preprocessing</button>
+        </form>
+
+        <!-- 3) Convert Form: scale/border/aspect controls + "Convert to KRL" -->
+        <form id="convert-form" action="{{ url_for('kuka_app.convert') }}" method="post" class="mb-4">
+          <hr>
+          <h5>Conversion Options</h5>
+          <!-- Preset & Aspect Mode row -->
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label for="preset_size">Preset Size:</label>
+              <select class="form-control" id="preset_size" name="preset_size">
+                <option value="custom"
+                  {% if convert_options.preset_size == 'custom' %}selected{% endif %}>
+                  Custom
+                </option>
+                <option value="a4"
+                  {% if convert_options.preset_size == 'a4' %}selected{% endif %}>
+                  A4 (210 x 297 mm)
+                </option>
+                <option value="a5"
+                  {% if convert_options.preset_size == 'a5' %}selected{% endif %}>
+                  A5 (148 x 210 mm)
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-md-4">
+              <label for="aspect_mode">Aspect Mode:</label>
+              <select class="form-control" id="aspect_mode" name="aspect_mode">
+                <option value="preserve"
+                  {% if convert_options.mode == 'preserve' %}selected{% endif %}>
+                  Preserve Aspect
+                </option>
+                <option value="scale_paper"
+                  {% if convert_options.mode == 'scale_paper' %}selected{% endif %}>
+                  Scale to Paper
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Scale X, chain icon, Scale Y -->
+          <div class="form-row align-items-end">
+            <div class="form-group col-md-4">
+              <label for="scale_x">Scale X:</label>
+              <input type="number" step="any" class="form-control" id="scale_x" name="scale_x"
+                     value="{{ convert_options.x }}">
+            </div>
+            <div class="form-group col-md-1 text-center" style="padding-bottom:0.5rem;">
+              <!-- Chain icon toggles locked/unlocked aspect ratio -->
+              <i id="chain-icon" class="fas fa-link"
+                 style="cursor:pointer;font-size:1.2rem;margin-top:1.9rem;"></i>
+            </div>
+            <div class="form-group col-md-4">
+              <label for="scale_y">Scale Y:</label>
+              <input type="number" step="any" class="form-control" id="scale_y" name="scale_y"
+                     value="{{ convert_options.y }}">
+            </div>
+          </div>
+
+          <!-- Border -->
+          <div class="form-row align-items-end">
+            <div class="form-group col-md-4">
+              <label for="border">Border (mm):</label>
+              <input type="number" step="any" class="form-control" id="border" name="border"
+                     value="{{ convert_options.border }}">
+            </div>
+            <div class="form-group col-md-4">
+              <label for="base">Base ID</label>
+              <input type="number" class="form-control" id="base" name="base"
+                     value="{{ convert_options.base }}">
+            </div>
+            <div class="form-group col-md-4">
+              <label for="tool">Tool ID</label>
+              <input type="number" class="form-control" id="tool" name="tool"
+                     value="{{ convert_options.tool }}">
+            </div>
+          </div>
+
+          <button id="convert-button" type="submit" class="btn btn-success">Convert to KRL</button>
+        </form>
+      </div>
+
+      <!-- 4) Plot Iframe + Undo/Redo on the right -->
+      <div class="col-md-6">
+        <iframe name="plot_frame" id="plot-iframe" src="{{ url_for('kuka_app.plot') }}"
+                width="100%" height="500px" class="border"></iframe>
+        <div class="d-flex justify-content-between mt-4">
+          <form action="{{ url_for('kuka_app.undo') }}" method="post">
+            <button type="submit" class="btn btn-info">Undo</button>
+          </form>
+          <form action="{{ url_for('kuka_app.redo') }}" method="post">
+            <button type="submit" class="btn btn-info">Redo</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5) KRL Output -->
+    <div class="row mt-4">
+      <div class="col-12 text-center mb-5">
+        <h2>KRL Script:</h2>
+        <textarea id="krl_text_area" class="form-control mb-2" rows="10"
+                  onchange="updateKRL()">{{ krl_script }}</textarea>
+        <button class="btn btn-secondary mb-2" onclick="copyToClipboard()">Copy to Clipboard</button>
+        <a href="{{ url_for('kuka_app.download_krl') }}" class="btn btn-info mb-2"
+           download="draw.src">Download KRL Script</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // Copy to Clipboard
+    function copyToClipboard() {
+      const copyText = document.getElementById("krl_text_area");
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(copyText.value)
+          .catch(err => console.error("Error copying text: ", err));
+      } else {
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+      }
+    }
+
+    // Update KRL script in session
+    function updateKRL() {
+      const krlScript = document.getElementById('krl_text_area').value;
+      fetch("{{ url_for('kuka_app.update_krl') }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ 'krl_script': krlScript })
+      });
+    }
+
+    // Plotly figure extraction
+    function extractFigureFromIframe(iframeId) {
+      var iframe = document.getElementById(iframeId);
+      if (iframe) {
+        var iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+        var plotlyGraphDiv = iframeDocument.querySelector('.plotly-graph-div');
+        if (plotlyGraphDiv) {
+          return plotlyGraphDiv.data;
+        } else {
+          console.error('Plotly graph div not found in iframe.');
+          return null;
+        }
+      } else {
+        console.error('Iframe not found.');
+        return null;
+      }
+    }
+
+    function updateFig(fig) {
+      fetch("{{ url_for('kuka_app.update_fig') }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fig: JSON.stringify(fig) })
+      }).then(response => {
+        if (!response.ok) console.error('Failed to update fig.');
+      });
+    }
+
+    // Listen for plot changes inside the iframe
+    document.getElementById('plot-iframe').addEventListener('load', function() {
+      var iframe = document.getElementById('plot-iframe');
+      var iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+      var plotlyGraphDiv = iframeDocument.querySelector('.plotly-graph-div');
+      if (plotlyGraphDiv) {
+        plotlyGraphDiv.on('plotly_restyle', function() {
+          var fig = extractFigureFromIframe('plot-iframe');
+          if (fig) {
+            updateFig(fig);
+          } else {
+            console.error('Failed to extract figure from iframe.');
+          }
+        });
+      }
+    });
+
+    // Aspect Lock Logic (via chain icon)
+    const scaleXInput = document.getElementById('scale_x');
+    const scaleYInput = document.getElementById('scale_y');
+    const chainIcon   = document.getElementById('chain-icon');
+
+    let isAspectLocked = true;
+    let aspectRatio = parseFloat(scaleYInput.value) / parseFloat(scaleXInput.value) || 1;
+
+    function updateChainIcon() {
+      if (isAspectLocked) {
+        chainIcon.classList.remove('fa-unlink');
+        chainIcon.classList.add('fa-link');
+      } else {
+        chainIcon.classList.remove('fa-link');
+        chainIcon.classList.add('fa-unlink');
+      }
+    }
+
+    chainIcon.addEventListener('click', () => {
+      isAspectLocked = !isAspectLocked;
+      updateChainIcon();
+    });
+
+    scaleXInput.addEventListener('input', () => {
+      const newX = parseFloat(scaleXInput.value) || 0;
+      if (isAspectLocked) {
+        scaleYInput.value = (newX * aspectRatio).toFixed(2);
+      } else {
+        aspectRatio = parseFloat(scaleYInput.value) / (newX || 1);
+      }
+    });
+
+    scaleYInput.addEventListener('input', () => {
+      const newY = parseFloat(scaleYInput.value) || 0;
+      if (isAspectLocked) {
+        scaleXInput.value = (newY / aspectRatio).toFixed(2);
+      } else {
+        aspectRatio = (newY || 1) / parseFloat(scaleXInput.value);
+      }
+    });
+
+    // Preset sizes
+    const presetSizeSelect = document.getElementById('preset_size');
+    presetSizeSelect.addEventListener('change', () => {
+      const preset = presetSizeSelect.value;
+      if (preset === 'a4') {
+        scaleXInput.value = 210;
+        scaleYInput.value = 297;
+        aspectRatio = 297 / 210;
+        isAspectLocked = true;
+      } else if (preset === 'a5') {
+        scaleXInput.value = 148;
+        scaleYInput.value = 210;
+        aspectRatio = 210 / 148;
+        isAspectLocked = true;
+      } else {
+        // custom
+        scaleXInput.value = 1.0;
+        scaleYInput.value = 1.0;
+        aspectRatio = 1.0;
+        isAspectLocked = true;
+      }
+      updateChainIcon();
+    });
+
+    // Initialize chain icon on page load
+    updateChainIcon();
+  </script>
+</body>
+</html>

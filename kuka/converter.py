@@ -19,14 +19,6 @@ DRAW_Z = 0.0  # Z height when pencil is down (drawing mode)
 HOME_X = 0.0  # Home X coordinate
 HOME_Y = 0.0  # Home Y coordinate
 
-# Paper dimensions (in mm)
-LENGTH_X = 210.0  # Length of the paper (e.g., A4 width)
-HEIGHT_Y = 297.0  # Height of the paper (e.g., A4 height)
-
-SCALING_METHOD = "keep_ratio" # "keep_ratio", "scale_to_paper"
-
-BORDER_WIDTH_X = 5.0
-BORDER_WIDTH_Y = 5.0
 
 # Spline smoothing parameters
 SMOOTHING_FACTOR = 0.5  # Increase to smooth more (0 forces interpolation through all points)
@@ -76,7 +68,8 @@ def smooth_contour(contour, smoothing=SMOOTHING_FACTOR, distance=POINT_DISTANCE)
 # ===========================================================
 # KRL Generation Function
 # ===========================================================
-def generate_krl_script(contours, save=True, filename="draw.krl"):
+def generate_krl_script(contours, save=True, filename="draw.src", scale=None, border=None, mode="preserve", base_id=3,
+                        tool_id=3):
     """
     Generates a KUKA KRL source file that instructs a 6-axis robot to draw
     the lines defined by the given (smoothed) contours.
@@ -92,7 +85,13 @@ def generate_krl_script(contours, save=True, filename="draw.krl"):
                                    points [X, Y] in the robot coordinate system.
       save (bool): Whether to save the KRL source code to a file.
       filename (str): Name of the output KRL source file.
+      :param scale: stuff
     """
+    if scale is None:
+        scale = np.array([1, 1])
+    if border is None:
+        border = np.array([20, 20])
+
     krl_lines = []
     # KUKA header and program definition
     krl_lines.append("&ACCESS RVP")
@@ -106,8 +105,8 @@ def generate_krl_script(contours, save=True, filename="draw.krl"):
     krl_lines.append("")
     krl_lines.append("")
     krl_lines.append("BAS(#initmov, 0)")
-    krl_lines.append("BAS(#tool, 3)")
-    krl_lines.append("BAS(#base, 3)")
+    krl_lines.append(f"BAS(#tool, {tool_id})")
+    krl_lines.append(f"BAS(#base, {base_id})")
     krl_lines.append("")
     krl_lines.append("PTP $axis_act")
     krl_lines.append("PTP p_home")
@@ -120,26 +119,20 @@ def generate_krl_script(contours, save=True, filename="draw.krl"):
     min_x = np.min([np.min(cont[:, 0]) for cont in contours])
     min_y = np.min([np.min(cont[:, 1]) for cont in contours])
 
-    height_without_border = HEIGHT_Y - 2*BORDER_WIDTH_Y
-    width_without_border = LENGTH_X - 2*BORDER_WIDTH_X
+    diff = [max_x - min_x, max_y - min_y]
 
-    # Calculate the scaling factor to maintain aspect ratio
-    scale_x = (LENGTH_X - 2 * BORDER_WIDTH_X) / (max_x - min_x)
-    scale_y = (HEIGHT_Y - 2 * BORDER_WIDTH_Y) / (max_y - min_y)
-    scale = min(scale_x, scale_y)
+    true_scaling = scale - 2 * border
 
     # scale Points
-    match SCALING_METHOD:
-        case "keep_ratio":
-            for cont in contours:
-                #cont[:] -= [min_x, min_y]
-                pass
+    match mode:
+        case "preserve":
+            scale_fac = min(true_scaling)
 
+            contours = [(cont - [min_x, min_y]) / diff * scale_fac + border for cont in contours]
 
-        case "scale_to_paper":
-            pass
-        case _:
-            print("WARNING: Unknown SCALING_METHOD {}".format(SCALING_METHOD))
+        case "scale_paper":
+
+            contours = [(cont - [min_x, min_y]) / diff * true_scaling + border for cont in contours]
 
 
     # Process each contour
@@ -152,10 +145,6 @@ def generate_krl_script(contours, save=True, filename="draw.krl"):
         print(f"Writing Contour {i+1} with {len(smooth_pts)} points")
 
         krl_lines.append(f"; ----- Contour {i + 1} -----")
-
-        # Scale points to fit on the paper
-        smooth_pts[:, 0] = smooth_pts[:, 0] * scale + BORDER_WIDTH_X
-        smooth_pts[:, 1] = smooth_pts[:, 1] * scale + BORDER_WIDTH_Y
 
         # Move with pencil up (PTP) to starting point.
         start_x, start_y = smooth_pts[0]
