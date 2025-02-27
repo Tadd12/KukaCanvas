@@ -51,4 +51,13 @@ def process_image(image_path, blur, blockSize, C):
         points_smoothed = smooth_contour(points)
         point_arrays.append(points_smoothed.tolist())  # Convert to list
 
+    all_x = np.concatenate([arr[:, 0] for arr in point_arrays])
+    A = np.min(all_x)
+    B = np.max(all_x)
+    
+    fac = A + B
+    
+    for arr in point_arrays:
+      arr[:, 0] = fac - arr[:, 0]
+    
     return point_arrays
