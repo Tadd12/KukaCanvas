@@ -56,7 +56,7 @@ def smooth_contour(contour, smoothing=SMOOTHING_FACTOR, distance=POINT_DISTANCE)
 
     # Generate new, uniformly spaced parameter values.
     mean = np.mean(np.sqrt(np.square(contour[:-1, 0] - contour[1:, 0]) + np.square(contour[:-1, 1] - contour[1:, 1])))
-    num_points = int((len(contour) * mean) / distance)
+    num_points = max(int((len(contour) * mean) / distance), 1)
     u_fine = np.linspace(0, 1, num_points)
 
     # Evaluate the spline to obtain smoothed coordinates.
