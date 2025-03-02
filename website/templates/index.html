@@ -8,6 +8,11 @@
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
   <!-- Font Awesome (for chain icons) -->
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.3/css/all.css">
+  <style>
+    .container {
+      max-width: 80vw; /* Adjust the width as needed */
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -126,7 +131,7 @@
       <!-- 4) Plot Iframe + Undo/Redo on the right -->
       <div class="col-md-6">
         <iframe name="plot_frame" id="plot-iframe" src="{{ url_for('kuka_app.plot') }}"
-                width="100%" height="500px" class="border"></iframe>
+                width="100%" height="85%" class="border"></iframe>
         <div class="d-flex justify-content-between mt-4">
           <form action="{{ url_for('kuka_app.undo') }}" method="post">
             <button type="submit" class="btn btn-info">Undo</button>
