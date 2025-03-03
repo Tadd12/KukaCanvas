@@ -22,7 +22,7 @@ HOME_Y = 0.0  # Home Y coordinate
 
 # Spline smoothing parameters
 SMOOTHING_FACTOR = 0.5  # Increase to smooth more (0 forces interpolation through all points)
-POINT_DISTANCE = 5  # Point Distance in mm
+POINT_DISTANCE = 2  # Point Distance in mm
 
 
 # ===========================================================
@@ -69,7 +69,7 @@ def smooth_contour(contour, smoothing=SMOOTHING_FACTOR, distance=POINT_DISTANCE)
 # KRL Generation Function
 # ===========================================================
 def generate_krl_script(contours, save=True, filename="draw.src", scale=None, border=None, mode="preserve", base_id=3,
-                        tool_id=3):
+                        tool_id=3, step=2):
     """
     Generates a KUKA KRL source file that instructs a 6-axis robot to draw
     the lines defined by the given (smoothed) contours.
@@ -141,7 +141,7 @@ def generate_krl_script(contours, save=True, filename="draw.src", scale=None, bo
             continue
 
         # Smooth (interpolate) the contour
-        smooth_pts = smooth_contour(contour)
+        smooth_pts = smooth_contour(contour, distance=step)
         print(f"Writing Contour {i+1} with {len(smooth_pts)} points")
 
         krl_lines.append(f"; ----- Contour {i + 1} -----")

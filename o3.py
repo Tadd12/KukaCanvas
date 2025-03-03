@@ -5,7 +5,7 @@ from PIL import Image, ImageFilter, ImageOps
 import matplotlib.pyplot as plt
 from skimage import measure, morphology
 
-import kuka.converter
+import website.kuka.converter
 
 # ===========================
 # Configuration Variables
@@ -167,7 +167,7 @@ def main():
     # Plot the extracted contours
     plot_contours(contours)
 
-    kuka.converter.generate_krl_script(contours, filename="draw.src")
+    website.kuka.converter.generate_krl_script(contours, filename="draw.src")
 
 
 if __name__ == "__main__":

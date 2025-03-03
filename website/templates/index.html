@@ -33,7 +33,8 @@
           <div class="form-group">
             <label for="blur_intensity">Blur Intensity:</label>
             <input type="number" class="form-control" id="blur_intensity" name="blur_intensity"
-                   value="{{ preprocessing_options.blur_intensity }}" min="1" max="15">
+                   value="{{ preprocessing_options.blur_intensity }}" min="1" max="15" required
+                   oninput="validateOdd(this)">
           </div>
           <div class="form-group">
             <label for="threshold_block_size">Threshold Block Size:</label>
@@ -112,15 +113,20 @@
               <input type="number" step="any" class="form-control" id="border" name="border"
                      value="{{ convert_options.border }}">
             </div>
-            <div class="form-group col-md-4">
+            <div class="form-group col-md-2">
               <label for="base">Base ID</label>
               <input type="number" class="form-control" id="base" name="base"
                      value="{{ convert_options.base }}">
             </div>
-            <div class="form-group col-md-4">
+            <div class="form-group col-md-2">
               <label for="tool">Tool ID</label>
               <input type="number" class="form-control" id="tool" name="tool"
                      value="{{ convert_options.tool }}">
+            </div>
+            <div class="form-group col-md-2">
+              <label for="step">Step Size (mm)</label>
+              <input type="number" class="form-control" id="step" name="step"
+                     value="{{ convert_options.step }}">
             </div>
           </div>
 
@@ -130,7 +136,10 @@
 
       <!-- 4) Plot Iframe + Undo/Redo on the right -->
       <div class="col-md-6">
-        <iframe name="plot_frame" id="plot-iframe" src="{{ url_for('kuka_app.plot') }}"
+        <div class="text-center mb-3">
+          <button id="toggleButton" class="btn btn-secondary" onclick="toggleView()">Robot Path</button>
+        </div>
+        <iframe name="plot_frame" id="plot-iframe" src="{{ url_for('kuka_app.plot', plot_type='cont') }}"
                 width="100%" height="85%" class="border"></iframe>
         <div class="d-flex justify-content-between mt-4">
           <form action="{{ url_for('kuka_app.undo') }}" method="post">
@@ -158,6 +167,23 @@
 
   <!-- JavaScript -->
   <script>
+
+    let currentView = "cont";
+    const path_url = "{{ url_for('kuka_app.plot', plot_type='path') }}"
+    const cont_url = "{{ url_for('kuka_app.plot', plot_type='cont') }}"
+
+    function toggleView() {
+      if (currentView === "path") {
+        currentView = "cont";
+        document.getElementById("toggleButton").innerText = "Contours";
+        document.getElementById("plot-iframe").src = cont_url
+      } else {
+        currentView = "path";
+        document.getElementById("toggleButton").innerText = "Robot Path";
+        document.getElementById("plot-iframe").src = path_url
+      }
+    }
+
     // Copy to Clipboard
     function copyToClipboard() {
       const copyText = document.getElementById("krl_text_area");
@@ -199,8 +225,15 @@
       }
     }
 
+    const update_path_url = "{{ url_for('kuka_app.update_fig', plot_type='path') }}"
+    const update_cont_url = "{{ url_for('kuka_app.update_fig', plot_type='cont') }}"
+
     function updateFig(fig) {
-      fetch("{{ url_for('kuka_app.update_fig') }}", {
+      let url = update_path_url
+      if (currentView === "cont") {
+        url = update_cont_url
+      }
+      fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fig: JSON.stringify(fig) })
@@ -225,6 +258,34 @@
         });
       }
     });
+
+    function validateBorder() {
+      const input = document.getElementById("border")
+      const border = parseFloat(input.value);
+      const scaley = parseFloat(document.getElementById("scale_y").value)
+      const scalex = parseFloat(document.getElementById("scale_x").value)
+      if (border > scalex) {
+        input.setCustomValidity("The Border must be smaller than Scale X");
+      } else if (border > scaley) {
+        input.setCustomValidity("The Border must be smaller than Scale Y");
+      } else {
+      input.setCustomValidity("");
+      }
+    }
+
+    function validateOdd(input) {
+      const value = parseInt(input.value, 10);
+      if (!isNaN(value)) {
+        if (value % 2 === 0) {
+          // Set an error message if the number is even.
+          input.setCustomValidity("Please enter an odd number.");
+        } else {
+          input.setCustomValidity("");
+        }
+      } else {
+        input.setCustomValidity("");
+      }
+    }
 
     // Aspect Lock Logic (via chain icon)
     const scaleXInput = document.getElementById('scale_x');
@@ -289,10 +350,17 @@
         isAspectLocked = true;
       }
       updateChainIcon();
+      validateBorder();
     });
 
     // Initialize chain icon on page load
     updateChainIcon();
+
+    document.getElementById("border").addEventListener("change", validateBorder);
+    document.getElementById("scale_x").addEventListener("change", validateBorder);
+    document.getElementById("scale_y").addEventListener("change", validateBorder);
+
+    validateBorder();
   </script>
 </body>
 </html>

@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image, ImageOps
 from skimage import measure
 
-import kuka.converter
+import website.kuka.converter
 
 image_path = "shibu.png"
 
@@ -104,4 +104,4 @@ plt.xlabel("X (pixels)")
 plt.ylabel("Y (pixels)")
 plt.show()
 
-kuka.converter.generate_krl_script(point_arrays, "draw.src")
+website.kuka.converter.generate_krl_script(point_arrays, "draw.src")

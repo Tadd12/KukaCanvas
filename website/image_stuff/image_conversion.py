@@ -23,7 +23,6 @@ def smooth_contour(contour, window_size=5):
 def process_image(image_path, blur, blockSize, C):
     image = Image.open(image_path).convert("RGBA")
     image = ImageOps.expand(image, border=20)
-    image = image.rotate(180)
 
     white_bg = Image.new("RGBA", image.size, (255, 255, 255, 255))
     pil_image = Image.alpha_composite(white_bg, image)
@@ -50,15 +49,6 @@ def process_image(image_path, blur, blockSize, C):
             continue
         points_smoothed = smooth_contour(points)
         point_arrays.append(points_smoothed)
-
-    all_x = np.concatenate([arr[:, 0] for arr in point_arrays])
-    A = np.min(all_x)
-    B = np.max(all_x)
-    
-    fac = A + B
-    
-    for arr in point_arrays:
-      arr[:, 0] = fac - arr[:, 0]
 
     # Interpolate the last point to the first point
     for i, arr in enumerate(point_arrays):
