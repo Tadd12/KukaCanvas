@@ -8,6 +8,7 @@
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
   <!-- Font Awesome (for chain icons) -->
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.3/css/all.css">
+  <script src="https://cdn.plot.ly/plotly-3.0.0.min.js" charset="utf-8"></script>
   <style>
     .container {
       max-width: 80vw; /* Adjust the width as needed */
@@ -18,18 +19,18 @@
   <div class="container">
     <h1 class="my-4 text-center">KukaCanvas</h1>
     <div class="row">
-      <div class="col-md-6">
+      <div class="col-md-5">
         <!-- 1) File Upload Form -->
         <form action="{{ url_for('kuka_app.upload') }}" method="post" enctype="multipart/form-data" class="mb-4">
           <div class="form-group">
             <label for="file">Upload PNG file:</label>
-            <input type="file" class="form-control-file" id="file" name="file" accept=".png">
+            <input type="file" class="form-control-file" id="file" name="file" accept="image/png, image/jpeg">
           </div>
           <button type="submit" class="btn btn-primary">Upload</button>
         </form>
 
         <!-- 2) Update Preprocessing Form -->
-        <form action="{{ url_for('kuka_app.update_preprocessing') }}" method="post" class="mb-4">
+        <form action="{{ url_for('kuka_app.update_preprocessing') }}" method="post" class="mb-2">
           <div class="form-group">
             <label for="blur_intensity">Blur Intensity:</label>
             <input type="number" class="form-control" id="blur_intensity" name="blur_intensity"
@@ -55,7 +56,7 @@
           <h5>Conversion Options</h5>
           <!-- Preset & Aspect Mode row -->
           <div class="form-row">
-            <div class="form-group col-md-4">
+            <div class="form-group col-md-5">
               <label for="preset_size">Preset Size:</label>
               <select class="form-control" id="preset_size" name="preset_size">
                 <option value="custom"
@@ -72,7 +73,7 @@
                 </option>
               </select>
             </div>
-            <div class="form-group col-md-4">
+            <div class="form-group col-md-5">
               <label for="aspect_mode">Aspect Mode:</label>
               <select class="form-control" id="aspect_mode" name="aspect_mode">
                 <option value="preserve"
@@ -89,7 +90,7 @@
 
           <!-- Scale X, chain icon, Scale Y -->
           <div class="form-row align-items-end">
-            <div class="form-group col-md-4">
+            <div class="form-group col-md-3">
               <label for="scale_x">Scale X:</label>
               <input type="number" step="any" class="form-control" id="scale_x" name="scale_x"
                      value="{{ convert_options.x }}">
@@ -99,7 +100,7 @@
               <i id="chain-icon" class="fas fa-link"
                  style="cursor:pointer;font-size:1.2rem;margin-top:1.9rem;"></i>
             </div>
-            <div class="form-group col-md-4">
+            <div class="form-group col-md-3">
               <label for="scale_y">Scale Y:</label>
               <input type="number" step="any" class="form-control" id="scale_y" name="scale_y"
                      value="{{ convert_options.y }}">
@@ -108,7 +109,7 @@
 
           <!-- Border -->
           <div class="form-row align-items-end">
-            <div class="form-group col-md-4">
+            <div class="form-group col-md-3">
               <label for="border">Border (mm):</label>
               <input type="number" step="any" class="form-control" id="border" name="border"
                      value="{{ convert_options.border }}">
@@ -123,7 +124,7 @@
               <input type="number" class="form-control" id="tool" name="tool"
                      value="{{ convert_options.tool }}">
             </div>
-            <div class="form-group col-md-2">
+            <div class="form-group col-md-3">
               <label for="step">Step Size (mm)</label>
               <input type="number" class="form-control" id="step" name="step"
                      value="{{ convert_options.step }}">
@@ -135,7 +136,7 @@
       </div>
 
       <!-- 4) Plot Iframe + Undo/Redo on the right -->
-      <div class="col-md-6">
+      <div class="col-md-7">
         <iframe name="plot_frame" id="plot-iframe" src="{{ url_for('kuka_app.plot', plot_type='cont') }}"
                 width="100%" height="85%" class="border"></iframe>
         <div class="d-flex justify-content-between mt-4">

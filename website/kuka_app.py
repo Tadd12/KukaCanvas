@@ -50,12 +50,14 @@ def index():
 @kuka_app.route('/upload', methods=['POST'])
 def upload():
     file = request.files['file']
-    if file and file.filename.lower().endswith(('.png', '.jpeg')):
+    if file and file.filename.lower().endswith(('.png', '.jpeg', "jpg")):
         file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file.filename)
         file.save(file_path)
         # Reset session variables related to the plot
-        del session["redo_stack"]
-        del session["fig"]
+        if "redo_stack" in session:
+            del session["redo_stack"]
+        if "fig" in session:
+            del session["fig"]
         session["file"] = file_path
 
         session["update_plots"] = True
@@ -74,7 +76,8 @@ def update_preprocessing():
 def plot(plot_type):
     if session.get("update_plots", False):
         session["update_plots"] = False
-        del session["fig"]
+        if "fig" in session:
+            del session["fig"]
         do_contours()
         do_convert()
 
@@ -222,3 +225,4 @@ def update_conversion():
         "tool": request.form.get("tool", 3),
         "step": float(request.form.get("step", 2)),
     }
+
