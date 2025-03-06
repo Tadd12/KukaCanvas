@@ -39,12 +39,6 @@ def index():
             "step": 2       # Default step size for robot movements
         }
 
-    if session.get("update_plots", False):
-        session["fig"] = {}
-        do_contours()
-        do_convert()
-        session["update_plots"] = False
-
     return render_template(
         'index.html',
         krl_script=session['krl_script'],
@@ -75,6 +69,13 @@ def update_preprocessing():
 
 @kuka_app.route('/plot/<plot_type>', methods=['GET'])
 def plot(plot_type):
+
+    if session.get("update_plots", False):
+        session["update_plots"] = False
+        session["fig"] = {}
+        do_contours()
+        do_convert()
+
     if 'fig' in session and plot_type in session['fig']:
         fig = plotly.io.from_json(session['fig'][plot_type])
     else:
@@ -92,9 +93,12 @@ def plot(plot_type):
     plot_html = pio.to_html(fig, full_html=False, div_id="myDiv")
     return plot_html
 
-@kuka_app.route('/update_fig/<plot_type>', methods=['POST'])
-def update_fig(plot_type):
-    session['fig'][plot_type] = request.json.get('fig')
+@kuka_app.route('/update_fig', methods=['POST'])
+def update_fig():
+    session['fig']["cont"] = request.json.get('fig')
+
+    do_convert()
+
     return '', 204
 
 @kuka_app.route('/convert', methods=['POST'])

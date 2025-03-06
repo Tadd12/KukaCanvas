@@ -45,12 +45,10 @@ def plot_cont(points: list|ndarray, fig: go.Figure = None, show: bool = True) ->
     fig.update_layout(
         title="Filtered & Smoothed Contours",
         xaxis_title="X (pixels)",
-        yaxis_title="Y (pixels)",
-        width=800,
-        height=800
+        yaxis_title="Y (pixels)"
     )
     # Invert the y-axis so that the origin is at the top-left
-    fig.update_yaxes(autorange='reversed', showgrid=True)
+    fig.update_yaxes(showgrid=True)
     fig.update_xaxes(showgrid=True)
 
     if show:
@@ -136,12 +134,10 @@ def plot_path(points: list|ndarray, fig: go.Figure = None, show: bool = True) ->
     fig.update_layout(
         title="Robot Path",
         xaxis_title="X (mm)",
-        yaxis_title="Y (mm)",
-        width=800,
-        height=800
+        yaxis_title="Y (mm)"
     )
     # Invert the y-axis so that the origin is at the top-left
-    fig.update_yaxes(autorange='reversed', showgrid=True)
+    fig.update_yaxes(showgrid=True)
     fig.update_xaxes(showgrid=True)
 
     if show:

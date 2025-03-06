@@ -175,11 +175,11 @@
     function toggleView() {
       if (currentView === "path") {
         currentView = "cont";
-        document.getElementById("toggleButton").innerText = "Contours";
+        document.getElementById("toggleButton").innerText = "Robot Path";
         document.getElementById("plot-iframe").src = cont_url
       } else {
         currentView = "path";
-        document.getElementById("toggleButton").innerText = "Robot Path";
+        document.getElementById("toggleButton").innerText = "Contours";
         document.getElementById("plot-iframe").src = path_url
       }
     }
@@ -225,21 +225,16 @@
       }
     }
 
-    const update_path_url = "{{ url_for('kuka_app.update_fig', plot_type='path') }}"
-    const update_cont_url = "{{ url_for('kuka_app.update_fig', plot_type='cont') }}"
-
     function updateFig(fig) {
-      let url = update_path_url
       if (currentView === "cont") {
-        url = update_cont_url
+        fetch("{{ url_for('kuka_app.update_fig') }}", {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({fig: JSON.stringify(fig)})
+        }).then(response => {
+          if (!response.ok) console.error('Failed to update fig.');
+        });
       }
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fig: JSON.stringify(fig) })
-      }).then(response => {
-        if (!response.ok) console.error('Failed to update fig.');
-      });
     }
 
     // Listen for plot changes inside the iframe

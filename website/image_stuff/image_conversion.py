@@ -72,6 +72,10 @@ def process_image(image_path, blur, blockSize, C):
 
         print(f"Done adding points to contour {i+1}, now has length", len(point_arrays[i]))
 
+    mini = np.min([np.min(p) for p in point_arrays])
+    maxi = np.max([np.max(p) for p in point_arrays])
 
+    for p in point_arrays:
+        p[:, 1] = mini + maxi - p[:, 1]
 
     return point_arrays
