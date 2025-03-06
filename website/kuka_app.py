@@ -29,14 +29,14 @@ def index():
         session['history'] = []
     if 'convert_options' not in session:
         session['convert_options'] = {
-            "x": 210.0,       # Default scale X
-            "y": 297.0,       # Default scale Y
-            "border": 20.0,    # Default border
-            "mode": "preserve",    # Default aspect mode
-            "preset_size": "a4",   # Default to A4
-            "base": 3,      # Default base id
-            "tool": 3,      # Default tool id
-            "step": 2       # Default step size for robot movements
+            "x": 210.0,  # Default scale X
+            "y": 297.0,  # Default scale Y
+            "border": 20.0,  # Default border
+            "mode": "preserve",  # Default aspect mode
+            "preset_size": "a4",  # Default to A4
+            "base": 3,  # Default base id
+            "tool": 3,  # Default tool id
+            "step": 2  # Default step size for robot movements
         }
 
     return render_template(
@@ -46,6 +46,7 @@ def index():
         convert_options=session['convert_options']
     )
 
+
 @kuka_app.route('/upload', methods=['POST'])
 def upload():
     file = request.files['file']
@@ -53,8 +54,8 @@ def upload():
         file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file.filename)
         file.save(file_path)
         # Reset session variables related to the plot
-        session.pop('redo_stack', None)
-        session.pop("fig", None)
+        del session["redo_stack"]
+        del session["fig"]
         session["file"] = file_path
 
         session["update_plots"] = True
@@ -62,19 +63,25 @@ def upload():
         return redirect(url_for('kuka_app.index'))
     return 'Invalid file format. Please upload a PNG or JPEG file.'
 
+
 @kuka_app.route('/update_preprocessing', methods=['POST'])
 def update_preprocessing():
     update_process()
     return redirect(url_for('kuka_app.index'))
 
+
 @kuka_app.route('/plot/<plot_type>', methods=['GET'])
 def plot(plot_type):
-
     if session.get("update_plots", False):
         session["update_plots"] = False
-        session["fig"] = {}
+        del session["fig"]
         do_contours()
         do_convert()
+
+    if session.get("update_path", False):
+        session["update_path"] = False
+        do_convert()
+        del session["fig"]["path"]
 
     if 'fig' in session and plot_type in session['fig']:
         fig = plotly.io.from_json(session['fig'][plot_type])
@@ -90,16 +97,18 @@ def plot(plot_type):
         if not "fig" in session:
             session['fig'] = {}
         session['fig'][plot_type] = fig.to_json()
-    plot_html = pio.to_html(fig, full_html=False, div_id="myDiv")
+    plot_html = pio.to_html(fig, full_html=False, div_id="myDiv", include_plotlyjs="cdn")
     return plot_html
+
 
 @kuka_app.route('/update_fig', methods=['POST'])
 def update_fig():
     session['fig']["cont"] = request.json.get('fig')
 
-    do_convert()
+    session["update_path"] = True
 
     return '', 204
+
 
 @kuka_app.route('/convert', methods=['POST'])
 def convert():
@@ -109,10 +118,12 @@ def convert():
 
     return redirect(url_for('kuka_app.index'))
 
+
 @kuka_app.route('/update_krl', methods=['POST'])
 def update_krl():
     session['krl_script'] = request.form['krl_script']
     return '', 204
+
 
 @kuka_app.route('/download_krl')
 def download_krl():
@@ -120,6 +131,7 @@ def download_krl():
     output.write(session['krl_script'].encode('utf-8'))
     output.seek(0)
     return send_file(output, as_attachment=True, download_name="draw.src", mimetype="text/plain")
+
 
 @kuka_app.route('/undo', methods=['POST'])
 def undo():
@@ -131,6 +143,7 @@ def undo():
         session['contours'], session['preprocessing_options'], session["convert_options"] = session['history'].pop()
     return redirect(url_for('kuka_app.index'))
 
+
 @kuka_app.route('/redo', methods=['POST'])
 def redo():
     if 'redo_stack' in session and session['redo_stack']:
@@ -141,6 +154,7 @@ def redo():
         session['contours'], session['preprocessing_options'], session["convert_options"] = session['redo_stack'].pop()
     return redirect(url_for('kuka_app.index'))
 
+
 def do_contours():
     points = process_image(session["file"],
                            session['preprocessing_options']['blur_intensity'],
@@ -149,6 +163,7 @@ def do_contours():
 
     session['contours'] = points
     session['history'].append((points.copy(), session['preprocessing_options'].copy()))
+
 
 def do_convert():
     if not "fig" in session or not "cont" in session["fig"]:
@@ -183,6 +198,7 @@ def do_convert():
                                                             tool_id=tool, step=step)
     session['krl_script'] = "\n".join(krl_script)
 
+
 def update_process():
     session["update_plots"] = True
 
@@ -191,6 +207,7 @@ def update_process():
         'threshold_block_size': int(request.form.get('threshold_block_size', 7)),
         'threshold_C': int(request.form.get('threshold_C', 4))
     }
+
 
 def update_conversion():
     session["update_plots"] = True
@@ -205,4 +222,3 @@ def update_conversion():
         "tool": request.form.get("tool", 3),
         "step": float(request.form.get("step", 2)),
     }
-
