@@ -1,6 +1,6 @@
 # KUKACanvas
 
-KUKACanvas is a Python-based tool that converts images into movement instructions for KUKA robots, enabling automated drawing or sketching. It provides an interface for image processing, contour detection, and the generation of robot code compatible with KUKA controllers.
+KUKACanvas is a Python-based tool that converts images into movement instructions for KUKA robots, enabling automated drawing or sketching. It provides an interface for image processing, contour detection, and the generation of robot code compatible with KUKA six-axis robots.
 
 ## Features
 
