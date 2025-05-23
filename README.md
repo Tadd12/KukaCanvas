@@ -21,14 +21,20 @@ pip install opencv-python numpy pillow scikit-image flask flask_session plotly p
 
 ## Usage
 
-1. Place your input image in the project directory.
-2. Use the `process_image` function in `website/image_stuff/image_conversion.py` to process the image and extract contours:
-   ```python
-   from website.image_stuff.image_conversion import process_image
-
-   contours = process_image('your_image.png', blur=5, blockSize=11, C=2)
+### With web interface
+1. Run the Flask web server:
+   ```bash
+   python app.py
    ```
-3. Use the resulting contours to generate KUKA robot movement commands (see `draw.src` for example output).
+2. Open your web browser and navigate to `https://{set-url}/kuka`
+3. Use KUKACanvas
+
+### Without web interface
+Look at `main.py` for the main function. You can set `ìmage_path` and `output_path` to your desired input image and output file name. Also image processing parameters can be set in `main.py`:
+
+```bash
+   python main.py
+```
 
 ## KRL Code Generation
 Every contour is represented as a series of points. The code generation function takes these points and formats them into KUKA Robot Language (KRL) commands. The generated code includes:
