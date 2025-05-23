@@ -1,107 +1,58 @@
-import os
 import sys
 
-import cv2
-import numpy as np
-from PIL import Image, ImageOps
-from skimage import measure
+from website.kuka import converter
+from website.image_stuff import image_conversion
 
-import website.kuka.converter
 
-image_path = "shibu.png"
 
-def smooth_contour(contour, window_size=5):
-    """
-    Smooth a contour using a simple moving-average filter.
+if __name__ == "__main__":
+    # Example usage: python main.py <image_path> <output_path> <blur_intensity> <threshold_block_size> <threshold_C>
 
-    Parameters:
-      contour (np.array): An array of shape (N,2) representing the contour points.
-      window_size (int): The window size for the moving average.
+    # Get parameters from command
+    print("Command line arguments:", sys.argv)
+    sys.argv.pop(0)  # Remove the script name from the arguments
 
-    Returns:
-      np.array: The smoothed contour.
-    """
-    if len(contour) < window_size:
-        return contour
+    if len(sys.argv) < 1:
+        print("Usage: python main.py <image_path>")
+        sys.exit(1)
 
-    kernel = np.ones(window_size) / window_size
-    pad = window_size // 2
+    image_path = sys.argv[0]
+    print("Image path:", image_path)
 
-    # Pad x and y using the edge values.
-    padded_x = np.pad(contour[:, 0], pad_width=pad, mode='edge')
-    padded_y = np.pad(contour[:, 1], pad_width=pad, mode='edge')
+    if len(sys.argv) < 3:
+        try:
+            contours = image_conversion.process_image(image_path, 5, 11, 2)
+        except Exception as e:
+            print(f"Error processing image: {e}")
+            sys.exit(1)
 
-    # Perform convolution in 'valid' mode to get an output of the original length.
-    smoothed_x = np.convolve(padded_x, kernel, mode='valid')
-    smoothed_y = np.convolve(padded_y, kernel, mode='valid')
+    else:
+        params = [5, 11, 2]
+        # Change the parameters based on command line arguments if provided whilst keeping in mind
+        # that the first two arguments are the image path and the script name
 
-    return np.stack((smoothed_x, smoothed_y), axis=-1)
+        for i in range(2, len(sys.argv)):
+            try:
+                params[i - 2] = int(sys.argv[i])
+            except ValueError:
+                print(f"Invalid parameter: {sys.argv[i]}. Using default value.")
 
-# Load the image and ensure it has an alpha channel
-dir_name = image_path.split(".")[0]
-os.makedirs(dir_name, exist_ok=True)
-try:
-    image = Image.open(image_path).convert("RGBA")
-except Exception as e:
-    sys.exit("Error opening image: " + str(e))
+        print("Using parameters:", params)
+        try:
+            contours = image_conversion.process_image(image_path, *params)
+        except Exception as e:
+            print(f"Error processing image: {e}")
+            sys.exit(1)
 
-image = ImageOps.expand(image, border=20)
-image = image.rotate(180)
+    # print("Contours:", contours)
 
-# Composite onto a white background (so transparent regions become white)
-white_bg = Image.new("RGBA", image.size, (255, 255, 255, 255))
-pil_image = Image.alpha_composite(white_bg, image)
-
-# Convert PIL image to NumPy array
-image_np = np.array(pil_image)
-
-# Convert image to grayscale
-image_grayscale = cv2.cvtColor(image_np, cv2.COLOR_BGR2GRAY)
-Image.fromarray(image_grayscale).rotate(180).save(f"{dir_name}/{dir_name}_gray.png")
-# Reduce image noise
-image_blur = cv2.medianBlur(image_grayscale, 7)
-Image.fromarray(image_blur).rotate(180).save(f"{dir_name}/{dir_name}_med_blur.png")
-# Extract edges
-image_edges = cv2.adaptiveThreshold(
-    image_blur,
-    255,
-    cv2.ADAPTIVE_THRESH_MEAN_C,
-    cv2.THRESH_BINARY_INV,
-    blockSize=3,
-    C=1
-    )
-
-cv2.imwrite(f"{dir_name}/{dir_name}_edges.png", image_edges)
-
-# Find contours
-raw_contours = measure.find_contours(image_edges.astype(float), level=0.9)
-
-# Convert contours to a list of point arrays
-point_arrays = []
-for contour in raw_contours:
-
-    points = np.fliplr(contour)
-
-    # Remove contours that are too short to be significant.
-    if len(points) < 20:
-        continue
-
-    # Remove outer contours (clockwise)
-    if np.sum((points[1:, 0] - points[:-1, 0]) * (points[1:, 1] + points[:-1, 1])) >= 0:
-        continue
-
-    # Smooth the contour line.
-    points_smoothed = smooth_contour(points)
-    point_arrays.append(points_smoothed)
-
-# Plot the contours with matplotlib
-import matplotlib.pyplot as plt
-
-plt.figure(figsize=(8, 8))
-for idx, contour in enumerate(point_arrays):
-    plt.plot(contour[:, 0], contour[:, 1], label=f"Contour {idx + 1}")
-plt.xlabel("X (pixels)")
-plt.ylabel("Y (pixels)")
-plt.show()
-
-website.kuka.converter.generate_krl_script(point_arrays, "draw.src")
+    # KRL script generation
+    output_path = sys.argv[1] if len(sys.argv) > 1 else "draw.src"
+    print("Output path:", output_path)
+    try:
+        krl_script = converter.generate_krl_script(contours, filename=output_path, save=True)
+        krl_script_string = "\n".join(krl_script)
+        print("KRL Script:\n", krl_script_string)
+    except Exception as e:
+        print(f"Error generating KRL script: {e}")
+        sys.exit(1)
