@@ -52,15 +52,15 @@ def process_image(image_path, blur, blockSize, C):
 
     # Interpolate the last point to the first point
     for i, arr in enumerate(point_arrays):
-        print(f"Processing contour {i+1} with length", len(point_arrays[i]))
+        # print(f"Processing contour {i+1} with length", len(point_arrays[i]))
         first_point = arr[0]
-        print(first_point)
+        # print(first_point)
         last_point = arr[-1]
-        print(last_point)
+        # print(last_point)
         # Calculate the distance between the first and last point
 
         distance = np.sqrt((first_point[0] - last_point[0])**2 + (first_point[1] - last_point[1])**2)
-        print(distance)
+        # print(distance)
         # If the distance is greater than 0.5, interpolate a new point
         if distance > 0.5:
             # Calculate points along the line between the first and last point with step size 10 % of distance
